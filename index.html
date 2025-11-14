@@ -4,9 +4,6 @@
 <meta charset="UTF-8">
 <title>Grand Island Weather Widget</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- Include simpleWeather JS and jQuery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/simpleWeather/3.1.0/jquery.simpleWeather.min.js"></script>
 
 <!-- Meteocons CSS -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meteocons/1.2/meteocons.css">
@@ -78,7 +75,6 @@ body {
 .forecast-day .temp {
   font-size: 16px;
 }
-
 </style>
 </head>
 <body>
@@ -95,35 +91,102 @@ body {
 </div>
 
 <script>
-$(document).ready(function() {
-  $.simpleWeather({
-    location: '68803',
-    woeid: '',
-    unit: 'f',
-    success: function(weather) {
-      // Current weather
-      $('#current-temp').text(weather.temp + '°');
-      $('#current-desc').text(weather.currently);
-      $('#current-icon').html('<i class="meteocons '+weather.code+'"></i>');
+// Your OpenWeatherMap API key
+const API_KEY = "234cc785d758a5fc8b52b3a8192d737e";
+const LAT = 40.95; // Grand Island latitude
+const LON = -98.42; // Grand Island longitude
+const UNITS = "imperial"; // Fahrenheit
 
-      // 7-day forecast
-      var forecastHtml = '';
-      for (var i = 0; i < 7; i++) {
-        var day = weather.forecast[i];
-        forecastHtml += `
-          <div class="forecast-day">
-            <div class="day">${day.day}</div>
-            <div class="icon"><i class="meteocons ${day.code}"></i></div>
-            <div class="temp">${day.high}° / ${day.low}°</div>
-          </div>
-        `;
-      }
-      $('#forecast').html(forecastHtml);
-    },
-    error: function(error) {
-      $('#weather-widget').html('<p style="color:red;">'+error+'</p>');
-    }
+// Map OpenWeatherMap codes to Meteocons
+const weatherCodeMap = {
+  200:"thunderstorm",
+  201:"thunderstorm",
+  202:"thunderstorm",
+  210:"lightning",
+  211:"lightning",
+  212:"lightning",
+  221:"lightning",
+  230:"thunderstorm",
+  231:"thunderstorm",
+  232:"thunderstorm",
+  300:"rain-mix",
+  301:"rain-mix",
+  302:"rain-mix",
+  310:"rain-mix",
+  311:"rain-mix",
+  312:"rain-mix",
+  313:"showers",
+  314:"showers",
+  321:"showers",
+  500:"rain",
+  501:"rain",
+  502:"rain",
+  503:"rain",
+  504:"rain",
+  511:"snow",
+  520:"showers",
+  521:"showers",
+  522:"showers",
+  531:"showers",
+  600:"snow",
+  601:"snow",
+  602:"snow",
+  611:"sleet",
+  612:"sleet",
+  615:"rain-mix",
+  616:"rain-mix",
+  620:"snow",
+  621:"snow",
+  622:"snow",
+  701:"fog",
+  711:"smoke",
+  721:"day-haze",
+  731:"dust",
+  741:"fog",
+  751:"dust",
+  761:"dust",
+  762:"dust",
+  771:"windy",
+  781:"tornado",
+  800:"clear-day",
+  801:"cloudy",
+  802:"cloudy",
+  803:"cloudy",
+  804:"cloudy"
+};
+
+// Fetch weather data
+fetch(`https://api.openweathermap.org/data/2.5/onecall?lat=${LAT}&lon=${LON}&exclude=minutely,hourly,alerts&units=${UNITS}&appid=${API_KEY}`)
+.then(response => response.json())
+.then(data => {
+  // Current weather
+  const current = data.current;
+  const code = current.weather[0].id;
+  const iconClass = weatherCodeMap[code] || "cloud";
+  document.getElementById("current-temp").textContent = Math.round(current.temp) + "°";
+  document.getElementById("current-desc").textContent = current.weather[0].description;
+  document.getElementById("current-icon").innerHTML = `<i class="meteocons ${iconClass}"></i>`;
+
+  // 7-day forecast
+  const forecastEl = document.getElementById("forecast");
+  forecastEl.innerHTML = "";
+  data.daily.slice(0,7).forEach(day => {
+    const date = new Date(day.dt * 1000);
+    const options = { weekday: 'short' };
+    const dayName = date.toLocaleDateString('en-US', options);
+    const dayCode = weatherCodeMap[day.weather[0].id] || "cloud";
+    const html = `
+      <div class="forecast-day">
+        <div class="day">${dayName}</div>
+        <div class="icon"><i class="meteocons ${dayCode}"></i></div>
+        <div class="temp">${Math.round(day.temp.max)}° / ${Math.round(day.temp.min)}°</div>
+      </div>
+    `;
+    forecastEl.insertAdjacentHTML('beforeend', html);
   });
+})
+.catch(err => {
+  document.getElementById("weather-widget").innerHTML = "<p style='color:red;'>Failed to load weather data.</p>";
 });
 </script>
 
